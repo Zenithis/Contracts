@@ -1,11 +1,6 @@
 import "@stdlib/deploy";
 import "./voting_tracker.tact";
 
-message Mint {
-    amount: Int as uint64;
-    receiver: Address;
-}
-
 /**
  * @title CampaignManager
  * @notice Manages voting campaigns and reward distribution
@@ -16,43 +11,48 @@ contract CampaignManager with Deployable {
     campaign_start: Int;
     campaign_end: Int;
     winning_nft: Address?;
+    winning_voters:Voters?;
     jetton_master: Address;
     campaign_number: Int;
     voter_reward: Int = 100;    // 100 Jettons for voters
     creator_reward: Int = 500;  // 500 Jettons for creator
-    min_votes_required: Int = 5; // Minimum votes needed to conclude campaign
-    
+    min_votes_required: Int = 1; // Minimum votes needed to conclude campaign
+    total_votes:Int = 0;
+    voting_tracker:Address;
+
     init(owner: Address, jetton_master: Address) {
         self.owner = owner;
         self.jetton_master = jetton_master;
         self.campaign_start = now();
         self.campaign_end = now() + 24 * 60 * 60;
         self.campaign_number = 1;
+        self.winning_nft = newAddress(0,0);
+        self.voting_tracker = contractAddress(initOf VotingTracker(myAddress()))
     }
 
     /**
      * @notice Validates and manages campaign state
      * @dev Called internally before any campaign-related operation
      */
+    
+
     fun manageCampaignState() {
         if (now() >= self.campaign_end) {
-            let init: StateInit = initOf VotingTracker(myAddress());
-            let voting_tracker: Address = contractAddress(init);
+            // Distribute Rewards
+           self.distributeRewards();
             
-            // Check if minimum votes threshold is met
-           
-            if (VotingTracker(voting_tracker).get_total_votes() >= self.min_votes_required) {
-                self.distributeRewards();
-            }
             
             // Start new campaign
             self.campaign_start = now();
             self.campaign_end = now() + 24 * 60 * 60;
             self.campaign_number = self.campaign_number + 1;
-            self.winning_nft = null;
-            
-            // Reset voting tracker
-            voting_tracker.reset();
+
+            send(SendParameters{
+                to:self.voting_tracker,
+                value:0,
+                mode:SendIgnoreErrors,
+                body:"reset".asComment()
+            })
         }
     }
 
@@ -63,17 +63,24 @@ contract CampaignManager with Deployable {
         self.manageCampaignState();
     }
 
+    receive(msg:ResponseWinningNFT){
+        self.winning_nft = msg.nftAddress;
+        self.winning_voters = msg.voters;
+    }
     /**
      * @notice Distributes rewards to winners and voters
      * @dev Called automatically when campaign ends
      */
     fun distributeRewards() {
-        let voting_tracker: VotingTracker = votingTracker();
-        let winning_nft_address: Address? = voting_tracker.getWinningNFT();
-        let winning_voters: map<Address, Bool> = voting_tracker.getWinningVoters();
+        send(SendParameters{
+            to:self.voting_tracker,
+            value:0,
+            mode:SendIgnoreErrors,
+            body:"ReqWinningNFT".asComment()
+        });
         
-        if (winning_nft_address != null) {
-            let nft: NFTItem = NFTItem(winning_nft_address!!);
+        if(self.winning_nft != null) {
+            let nft: NFTItem = NFTItem(self.winning_nft!!);
             let creator: Address = nft.getOwner();
             
             // Mint rewards for creator
@@ -87,10 +94,11 @@ contract CampaignManager with Deployable {
                 }.toCell()
             });
             
+            self.distribute_rewards_to_voters();
         }
     }
     
-    fun distribute_rewards() {
+    fun distribute_rewards_to_voters() {
         foreach(voter, value in self.winning_voters){
              send(SendParameters{
             to: self.jetton_master,

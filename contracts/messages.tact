@@ -1,3 +1,8 @@
+
+struct Voters {
+    voters: map<Address, Bool>;
+}
+
 message(0x178d4519) TokenTransfer {
     query_id: Int as uint64;
     amount: Int as uint64;
@@ -30,3 +35,29 @@ message InternalTransfer {
     from: Address;
     response_destination: Address;
 }
+
+message ReqVotes{
+    query_id:Int;
+}
+
+message ResponseTotalVotes{
+    query_id:Int;
+    totalVotes:Int;
+}
+
+message RegisterVote {
+    nft_address: Address;
+    voter: Address;
+}
+
+message Touch {
+    query_id: Int as uint64;
+}
+
+message ResponseWinningNFT{
+    nftAddress:Address;
+    voters:Voters?;
+}
+
+
+
