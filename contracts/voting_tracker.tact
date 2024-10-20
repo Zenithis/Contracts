@@ -5,9 +5,6 @@ import "./messages.tact";
  * @notice Tracks votes across all NFTs in the current campaign
  */
 
-
-
-
 contract VotingTracker with Deployable {
     campaign_manager: Address;
     votes_per_nft: map<Address, Int>;
@@ -26,15 +23,18 @@ contract VotingTracker with Deployable {
         self.votes_per_nft = emptyMap();
         self.voters_per_nft = emptyMap();
         self.total_votes = 0;
+        self.WinningNFT();
         send(SendParameters{
             to:self.campaign_manager,
             value:0,
             mode:SendIgnoreErrors,
             body:ResponseWinningNFT{nftAddress:self.winning_nft,voters:self.WinningNFTVoters()}.toCell()
-        })
+        });
+        self.winning_nft = newAddress(0,0);
     }
 
     receive("ReqWinningNFT"){
+        self.WinningNFT();
          send(SendParameters{
             to:self.campaign_manager,
             value:0,
@@ -99,8 +99,12 @@ contract VotingTracker with Deployable {
         return self.winning_nft;
     }
 
-    get fun WinningNFTVoters(): Voters?{
-        let voters = self.voters_per_nft.get(self.winning_nft);
+    get fun WinningNFTVoters(): map<Address,Bool>{
+        let voters:map<Address,Bool > = emptyMap();
+        if(self.voters_per_nft.get(self.winning_nft)!=null){
+        let winning_voters:Voters =self.voters_per_nft.get(self.winning_nft)!!; 
+            voters = winning_voters.voters;   
+        }
         return voters;
     }
 }

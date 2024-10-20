@@ -1,34 +1,55 @@
 import "@stdlib/deploy";
 import "./voting_tracker.tact";
-
+import "./n_f_t_item_v2.tact";
 /**
  * @title CampaignManager
  * @notice Manages voting campaigns and reward distribution
  * @dev Self-managing campaign cycles without off-chain triggers
  */
+ 
+const voter_reward: Int = 100;    // 100 Jettons for voters
+const creator_reward: Int = 500;  // 500 Jettons for creator
+const min_votes_required: Int = 1; // Minimu
+
 contract CampaignManager with Deployable {
-    owner: Address;
     campaign_start: Int;
     campaign_end: Int;
     winning_nft: Address?;
-    winning_voters:Voters?;
+    winning_voters:map<Address,Bool>;
     jetton_master: Address;
     campaign_number: Int;
-    voter_reward: Int = 100;    // 100 Jettons for voters
-    creator_reward: Int = 500;  // 500 Jettons for creator
-    min_votes_required: Int = 1; // Minimum votes needed to conclude campaign
     total_votes:Int = 0;
     voting_tracker:Address;
+    winning_nft_owner:Address;
 
-    init(owner: Address, jetton_master: Address) {
-        self.owner = owner;
+    init(jetton_master: Address) {
         self.jetton_master = jetton_master;
+        self.voting_tracker = contractAddress(initOf VotingTracker(myAddress()));
         self.campaign_start = now();
         self.campaign_end = now() + 24 * 60 * 60;
         self.campaign_number = 1;
         self.winning_nft = newAddress(0,0);
-        self.voting_tracker = contractAddress(initOf VotingTracker(myAddress()))
+        self.winning_nft_owner = newAddress(0,0);
     }
+    /**
+     * @notice Any interaction with the contract triggers campaign state check
+     */
+        receive("Touch") {
+            self.manageCampaignState();
+        }
+
+        receive(msg:ResponseWinningNFT){
+            self.winning_nft = msg.nftAddress;
+            self.winning_voters = msg.voters;
+        }
+
+        receive("GetCampaignDetails"){
+            self.reply(ResCampaignDetails{campaign_start:self.campaign_start,campaign_end:self.campaign_end,current_campaign:self.campaign_number}.toCell())
+        }
+        receive(msg:ResNFTOwner){
+               self.winning_nft_owner = msg.owner;
+        }
+    
 
     /**
      * @notice Validates and manages campaign state
@@ -57,17 +78,6 @@ contract CampaignManager with Deployable {
     }
 
     /**
-     * @notice Any interaction with the contract triggers campaign state check
-     */
-    receive("Touch") {
-        self.manageCampaignState();
-    }
-
-    receive(msg:ResponseWinningNFT){
-        self.winning_nft = msg.nftAddress;
-        self.winning_voters = msg.voters;
-    }
-    /**
      * @notice Distributes rewards to winners and voters
      * @dev Called automatically when campaign ends
      */
@@ -79,36 +89,43 @@ contract CampaignManager with Deployable {
             body:"ReqWinningNFT".asComment()
         });
         
-        if(self.winning_nft != null) {
-            let nft: NFTItem = NFTItem(self.winning_nft!!);
-            let creator: Address = nft.getOwner();
-            
-            // Mint rewards for creator
+        //Getting winning_nft owner
+        if(self.winning_nft!=null){
+            send(SendParameters{
+                to:self.winning_nft!!,
+                value:0,
+                mode:SendIgnoreErrors,
+                body:"GetOwner".asComment()
+        });
+        }
+        
+        
+        // Mint rewards for creator
             send(SendParameters{
                 to: self.jetton_master,
                 value: ton("0.1"),
                 bounce: true,
                 body: Mint{
-                    amount: self.creator_reward,
-                    receiver: creator
+                    amount: creator_reward,
+                    receiver: self.winning_nft_owner
                 }.toCell()
             });
             
             self.distribute_rewards_to_voters();
         }
-    }
     
     fun distribute_rewards_to_voters() {
+
         foreach(voter, value in self.winning_voters){
              send(SendParameters{
             to: self.jetton_master,
             value: ton("0.1"),
             bounce: true,
             body: Mint{
-                amount: self.voter_reward,
+                amount: voter_reward,
                 receiver: voter
             }.toCell()
         });
-        } 
+        }
     }
 }
