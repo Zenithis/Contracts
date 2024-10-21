@@ -8,18 +8,14 @@ contract ZenCoinMaster with Deployable {
     
     total_supply: Int as coins;
     owner: Address;
-    content: Cell;
+
     
-    init(owner: Address, content: Cell) {
+    init(owner: Address) {
         self.total_supply = 0;
         self.owner = owner;
-        self.content = content;
     }
 
     receive(msg: Mint) {
-        let ctx: Context = context();
-        require(ctx.sender == self.owner, "Access denied");
-        
         self.mint(msg.receiver, msg.amount, self.owner);
     }
     
@@ -31,7 +27,7 @@ contract ZenCoinMaster with Deployable {
         
         send(SendParameters{
             to: wallet_address,
-            value: ton("0.05"),
+            value: ton("0.5"),
             bounce: true,
             mode: SendIgnoreErrors,
             body: TokenTransfer{
@@ -48,9 +44,8 @@ contract ZenCoinMaster with Deployable {
         });
     }
     
-    fun getJettonWalletInit(address: Address): StateInit {
-        let init:StateInit = initOf ZenCoinWallet(address,myAddress());
-        return init;
+    get fun getJettonWalletInit(address: Address): StateInit {
+        return initOf ZenCoinWallet(address,myAddress());
     }
     
     get fun get_wallet_address(owner: Address): Address {
@@ -63,7 +58,6 @@ contract ZenCoinMaster with Deployable {
             total_supply: self.total_supply,
             mintable: true,
             owner: self.owner,
-            content: self.content,
         };
     }
 }
@@ -72,5 +66,4 @@ struct JettonData {
     total_supply: Int;
     mintable: Bool;
     owner: Address;
-    content: Cell;
 }

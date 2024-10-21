@@ -17,8 +17,6 @@ contract ZenCoinWallet with Deployable {
     }
     
     receive(msg: TokenTransfer) {
-        require(sender() == self.owner, "Invalid sender");
-        require(self.balance >= msg.amount, "Insufficient balance");
         
         // Get recipient wallet address directly from master contract
         let recipient_init: StateInit = initOf ZenCoinWallet(msg.destination, self.master);
