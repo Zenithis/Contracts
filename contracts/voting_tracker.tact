@@ -56,12 +56,16 @@ contract VotingTracker with Deployable {
                 query_id: 0
             }.toCell()
         });
-
         if(self.votes_per_nft.get(msg.nft_address)!=null){
             self.votes_per_nft.set(
                 msg.nft_address, 
                 ( self.votes_per_nft.get(msg.nft_address)!! + 1)
             );
+        }else{
+            self.votes_per_nft.set(
+                msg.nft_address,
+                1
+            )
         }
         
         if(self.voters_per_nft.get(msg.nft_address)!=null){
@@ -69,6 +73,15 @@ contract VotingTracker with Deployable {
             nft_voters.voters.set(msg.voter, true);
             self.voters_per_nft.set(msg.nft_address, nft_voters);
         
+            self.total_votes = self.total_votes + 1;
+        
+        }else{
+            let fizz:map<Address,Bool> = emptyMap();
+            fizz.set(msg.voter, true);
+            let nft_voters: Voters = Voters{
+                voters: fizz
+            };
+            self.voters_per_nft.set(msg.nft_address, nft_voters);
             self.total_votes = self.total_votes + 1;
         }
        
@@ -87,15 +100,23 @@ contract VotingTracker with Deployable {
         return self.voters_per_nft.get(nft_address);
     }
 
-    get fun WinningNFT(): Address{
-        let maxVotes:Int = 0;
+   get fun WinningNFT(): Address {
+        let maxVotes: Int = 0;
+        let isFirstMaxFound: Bool = false;
 
-        foreach(nft,votes in self.votes_per_nft){
-            if(votes > maxVotes){
+        foreach(nft, votes in self.votes_per_nft) {
+            if (votes > maxVotes ) {
                 maxVotes = votes;
+            } 
+        }
+        foreach(nft, votes in self.votes_per_nft) {
+            if (votes == maxVotes && !isFirstMaxFound) {
                 self.winning_nft = nft;
+                isFirstMaxFound = true;
             }
         }
+
+
         return self.winning_nft;
     }
 

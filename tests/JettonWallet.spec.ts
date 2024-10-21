@@ -1,21 +1,21 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano } from '@ton/core';
-import { NFTItem } from '../wrappers/NFTItem';
+import { JettonWallet } from '../wrappers/JettonWallet';
 import '@ton/test-utils';
 
-describe('NFTItem', () => {
+describe('JettonWallet', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
-    let nFTItem: SandboxContract<NFTItem>;
+    let jettonWallet: SandboxContract<JettonWallet>;
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
 
-        nFTItem = blockchain.openContract(await NFTItem.fromInit());
+        jettonWallet = blockchain.openContract(await JettonWallet.fromInit());
 
         deployer = await blockchain.treasury('deployer');
 
-        const deployResult = await nFTItem.send(
+        const deployResult = await jettonWallet.send(
             deployer.getSender(),
             {
                 value: toNano('0.05'),
@@ -28,7 +28,7 @@ describe('NFTItem', () => {
 
         expect(deployResult.transactions).toHaveTransaction({
             from: deployer.address,
-            to: nFTItem.address,
+            to: jettonWallet.address,
             deploy: true,
             success: true,
         });
@@ -36,6 +36,6 @@ describe('NFTItem', () => {
 
     it('should deploy', async () => {
         // the check is done inside beforeEach
-        // blockchain and nFTItem are ready to use
+        // blockchain and jettonWallet are ready to use
     });
 });

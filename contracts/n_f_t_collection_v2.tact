@@ -2,7 +2,7 @@ import "./messages.tact";
 import "@stdlib/deploy";
 import "./n_f_t_item_v2.tact";
 
-contract NftCollection with Deployable {
+contract NftCollectionV2 with Deployable {
     next_item_index: Int as uint32 = 0;
     owner_address: Address;                      
     collection_content: Cell;   
@@ -30,7 +30,7 @@ contract NftCollection with Deployable {
     // ===== Private Methods ===== //
     fun mint(sender: Address, msgValue: Int) {
         require(self.next_item_index >= 0, "non-sequential NFTs");
-        let nft_init: StateInit = self.getNftItemInit(self.next_item_index);
+        let nft_init: StateInit = self.getNFTItemV2Init(self.next_item_index);
         send(SendParameters{
                 to: contractAddress(nft_init), 
                 value: msgValue, 
@@ -81,12 +81,12 @@ contract NftCollection with Deployable {
     }
 
     get fun get_nft_address_by_index(item_index: Int): Address?{      
-        let initCode: StateInit = self.getNftItemInit(item_index);
+        let initCode: StateInit = self.getNFTItemV2Init(item_index);
         return contractAddress(initCode);
     }
 
-    get fun getNftItemInit(item_index: Int): StateInit {
-        return initOf NftItem(myAddress(), item_index,self.campaign_manager,self.voting_tracker);
+    get fun getNFTItemV2Init(item_index: Int): StateInit {
+        return initOf NftItemV2(myAddress(), item_index,self.campaign_manager,self.voting_tracker);
     }
     
     get fun get_nft_content(index: Int, individual_content: Cell): Cell { 

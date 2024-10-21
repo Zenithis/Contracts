@@ -4,7 +4,7 @@ import "./messages.tact";
 const minTonsForStorage: Int = ton("0.02");
 const gasConsumption: Int = ton("0.02");
 
-contract NftItem with Deployable {
+contract NftItemV2 with Deployable {
     collection_address: Address;
     item_index: Int; 
     is_initialized: Bool;
@@ -148,18 +148,18 @@ contract NftItem with Deployable {
 
     // --------- Get Function  --------- //
     get fun get_nft_data(): GetNftData {
-        let b: StringBuilder = beginString();
-        let collectionData: String = (self.individual_content!!).asSlice().asString();
-        b.append(collectionData);
-        b.append(self.item_index.toString());
-        b.append(".json");
+        // let b: StringBuilder = beginString();
+        // let collectionData: String = (self.individual_content!!).asSlice().asString();
+        // b.append(collectionData);
+        // b.append(self.item_index.toString());
+        // b.append(".json");
 
         return GetNftData {
             is_initialized: self.is_initialized, 
             index: self.item_index, 
             collection_address: self.collection_address, 
             owner_address: self.owner!!,
-            individual_content: b.toCell()
+            individual_content: "".asComment()
         };
     }
 }

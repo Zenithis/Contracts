@@ -68,12 +68,12 @@ contract CampaignManager with Deployable {
             self.campaign_end = now() + 24 * 60 * 60;
             self.campaign_number = self.campaign_number + 1;
 
-            send(SendParameters{
-                to:self.voting_tracker,
-                value:0,
-                mode:SendIgnoreErrors,
-                body:"reset".asComment()
-            })
+            // send(SendParameters{
+            //     to:self.voting_tracker,
+            //     value:0,
+            //     mode:SendIgnoreErrors,
+            //     body:"reset".asComment()
+            // })
         }
     }
 
