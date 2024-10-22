@@ -35,7 +35,7 @@ contract CampaignManager with Deployable {
      * @notice Any interaction with the contract triggers campaign state check
      */
         receive("Touch") {
-            self.manageCampaignState();
+            self.manageCampaignState(2);
         }
 
         receive(msg:ResponseWinningNFT){
@@ -57,8 +57,9 @@ contract CampaignManager with Deployable {
      */
     
 
-    fun manageCampaignState() {
-        if (now() >= self.campaign_end) {
+    fun manageCampaignState(time:Int) {
+        // if (now() >= self.campaign_end) {
+        if(time>1){
             // Distribute Rewards
            self.distributeRewards();
             
@@ -126,6 +127,13 @@ contract CampaignManager with Deployable {
                 receiver: voter
             }.toCell()
         });
+        }
+    }
+    get fun CampaignDetail():CampaignDetails{
+        return CampaignDetails{
+            campaign_start:self.campaign_start,
+            campaign_end:self.campaign_end,
+            current_campaign:self.campaign_number
         }
     }
 }

@@ -2,7 +2,11 @@
 struct Voters {
     voters: map<Address, Bool>;
 }
-
+struct CampaignDetails{
+    campaign_start:Int;
+    campaign_end:Int;
+    current_campaign:Int;
+}
 message ResCampaignDetails{
     campaign_start:Int;
     campaign_end:Int;
