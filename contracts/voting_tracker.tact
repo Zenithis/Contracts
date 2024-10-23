@@ -52,9 +52,7 @@ contract VotingTracker with Deployable {
             to: self.campaign_manager,
             value: ton("0.01"),
             bounce: true,
-            body: Touch{
-                query_id: 0
-            }.toCell()
+            body: "Touch".asComment()
         });
         if(self.votes_per_nft.get(msg.nft_address)!=null){
             self.votes_per_nft.set(

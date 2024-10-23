@@ -85,19 +85,19 @@ trait Jetton with Ownable {
             });
         }
     }
-
+    
     // @to The Address receive the Jetton token after minting
     // @amount The amount of Jetton token being minted
     // @response_destination The previous owner address
     fun mint(to: Address, amount: Int, response_destination: Address) {
-        require(self.totalSupply + amount <= self.max_supply, "The total supply will be overlapping.");
+        // require(self.totalSupply + amount <= self.max_supply, "The total supply will be overlapping.");
         self.totalSupply = self.totalSupply + amount; // Update total supply
 
         let winit: StateInit = self.getJettonWalletInit(to); // Create message
         send(SendParameters{
             to: contractAddress(winit), 
             value: 0, 
-            bounce: false,
+            bounce: true,
             mode: SendRemainingValue,
             body: TokenTransferInternal{ 
                 queryId: 0,

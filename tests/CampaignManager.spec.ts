@@ -33,7 +33,7 @@ describe('CampaignManager', () => {
 
         let content = buildOnchainMetadata(jettonParams);
 
-        jettonMaster = blockchain.openContract(await JettonMaster.fromInit(deployer.address,content,10000000n));
+        jettonMaster = blockchain.openContract(await JettonMaster.fromInit(voter1.address,content,10000000n));
         jettonWallet = blockchain.openContract(await JettonWallet.fromInit(jettonMaster.address,voter1.address));
 
         campaignManager = blockchain.openContract(
@@ -108,8 +108,16 @@ describe('CampaignManager', () => {
         const nft1 = await blockchain.treasury('nft1');
         const balanceBefore = (await jettonWallet.getGetWalletData()).balance;
         console.log("Balance Before" , balanceBefore);
+        
+        const distributeResult = await campaignManager.send(
+            deployer.getSender(),
+            {
+                value: toNano('1'),
+            },
+            'Touch'
+        );
         const result = await votingTracker.send(
-            nft1.getSender(),
+            deployer.getSender(),
             {
                 value: toNano('0.5'),
             },
@@ -119,23 +127,18 @@ describe('CampaignManager', () => {
                 voter: voter1.address
             }
         );
-
-        
         console.log("Vote on nft txn ",result.events);
-        expect(result.transactions).toHaveLength(4);
+        expect(result.transactions).toHaveLength(3);
 
         const votesForNFT = await votingTracker.getGetVotesForNft(nft1.address);
         expect(votesForNFT).toEqual(1n);
-        const nftWinner = await votingTracker.getWinningNft(); 
-        // Fast forward time to end of campaign
-        console.log("Winning NFT " , nftWinner);
-        const distributeResult = await campaignManager.send(
-            deployer.getSender(),
-            {
-                value: toNano('1'),
-            },
-            'Touch'
-        );
+
+        const nftWinner = await votingTracker.getWinningNft();
+
+        // // Fast forward time to end of campaign
+      
+        console.log("Distribute rewards txn ",distributeResult.events);
+
         const balanceAfter = (await jettonWallet.getGetWalletData()).balance;
         console.log("Balance after ",balanceAfter);
         

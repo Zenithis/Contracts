@@ -26,7 +26,7 @@ contract CampaignManager with Deployable {
         self.jetton_master = jetton_master;
         self.voting_tracker = contractAddress(initOf VotingTracker(myAddress()));
         self.campaign_start = now();
-        self.campaign_end = now() + 24 * 60 * 60;
+        self.campaign_end = now() + 1;
         self.campaign_number = 1;
         self.winning_nft = newAddress(0,0);
         self.winning_nft_owner = newAddress(0,0);
@@ -35,12 +35,13 @@ contract CampaignManager with Deployable {
      * @notice Any interaction with the contract triggers campaign state check
      */
         receive("Touch") {
-            self.manageCampaignState(2);
+            self.manageCampaignState();
         }
 
         receive(msg:ResponseWinningNFT){
             self.winning_nft = msg.nftAddress;
-            self.winning_voters = msg.voters;
+            self.winning_voters = msg.voters;      
+            dump(self.winning_nft);
         }
 
         receive("GetCampaignDetails"){
@@ -48,6 +49,8 @@ contract CampaignManager with Deployable {
         }
         receive(msg:ResNFTOwner){
                self.winning_nft_owner = msg.owner;
+               dump("Winning NFT Owner");
+               dump(self.winning_nft_owner);
         }
     
 
@@ -57,10 +60,10 @@ contract CampaignManager with Deployable {
      */
     
 
-    fun manageCampaignState(time:Int) {
-        // if (now() >= self.campaign_end) {
-        if(time>1){
+    fun manageCampaignState() {
+        if (now() >= self.campaign_end) {
             // Distribute Rewards
+           dump("Distributing Rewards");
            self.distributeRewards();
             
             
@@ -68,6 +71,7 @@ contract CampaignManager with Deployable {
             self.campaign_start = now();
             self.campaign_end = now() + 24 * 60 * 60;
             self.campaign_number = self.campaign_number + 1;
+        }
 
             // send(SendParameters{
             //     to:self.voting_tracker,
@@ -75,13 +79,18 @@ contract CampaignManager with Deployable {
             //     mode:SendIgnoreErrors,
             //     body:"reset".asComment()
             // })
-        }
+        // }
     }
 
     /**
      * @notice Distributes rewards to winners and voters
      * @dev Called automatically when campaign ends
      */
+
+
+     bounced(msg:bounced<Mint>){
+        dump("Mint function Bounced");
+     }
     fun distributeRewards() {
         send(SendParameters{
             to:self.voting_tracker,
@@ -94,7 +103,7 @@ contract CampaignManager with Deployable {
         if(self.winning_nft!=null){
             send(SendParameters{
                 to:self.winning_nft!!,
-                value:0,
+                value:ton("0.1"),
                 mode:SendIgnoreErrors,
                 body:"GetOwner".asComment()
         });
@@ -102,9 +111,10 @@ contract CampaignManager with Deployable {
         
         
         // Mint rewards for creator
+        dump("Minting Rewards for Creator");
             send(SendParameters{
                 to: self.jetton_master,
-                value: ton("0.1"),
+                value: ton("0.5"),
                 bounce: true,
                 body: Mint{
                     amount: creator_reward,
@@ -120,7 +130,7 @@ contract CampaignManager with Deployable {
         foreach(voter, value in self.winning_voters){
              send(SendParameters{
             to: self.jetton_master,
-            value: ton("0.1"),
+            value: ton("0.5"),
             bounce: true,
             body: Mint{
                 amount: voter_reward,

@@ -34,6 +34,7 @@ contract NftItemV2 with Deployable {
     receive("GetOwner"){
         if(self.owner!=null){
             self.reply(ResNFTOwner{owner:self.owner!!}.toCell());
+            dump("Owner of NFT Details sent");
         }
     }
     receive(msg: Transfer){
